@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: topshooter-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-topshooter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-topshooter}
+      POSTGRES_DB: ${POSTGRES_DB:-topshooter}
+    volumes:
+      - topshooter-pg-data:/var/lib/postgresql/data
+    networks:
+      - topshooter-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-topshooter}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  topshooter:
+    build: .
+    container_name: topshooter
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      OWNER_ID: ${OWNER_ID}
+      DEV_GUILD_ID: ${DEV_GUILD_ID}
+      DATABASE_URL: postgres://${POSTGRES_USER:-topshooter}:${POSTGRES_PASSWORD:-topshooter}@postgres:5432/${POSTGRES_DB:-topshooter}
+      BOT_API_TOKEN: ${BOT_API_TOKEN}
+      BOT_API_HOST: 0.0.0.0
+      BOT_API_PORT: 8000
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      STATUS_AUTO_POST_CHANNEL_ID: ${STATUS_AUTO_POST_CHANNEL_ID:-}
+      STATUS_TIMEZONE: ${STATUS_TIMEZONE:-America/Chicago}
+    networks:
+      - topshooter-net
+    # No ports exposed to host — bot is internal-only.
+    # Other containers on `topshooter-net` reach it at http://topshooter:8000
+
+networks:
+  topshooter-net:
+    name: topshooter-net
+    driver: bridge
+
+volumes:
+  topshooter-pg-data:
+    name: topshooter-pg-data

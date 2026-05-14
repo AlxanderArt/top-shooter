@@ -1,0 +1,33 @@
+.env
+.env.*
+!.env.example
+
+data/
+logs/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# IDE-generated test scaffolding (we don't ship tests yet)
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local-only scratch
+scratch/
+TODO.md
