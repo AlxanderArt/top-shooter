@@ -37,10 +37,17 @@ services:
       STATUS_TIMEZONE: ${STATUS_TIMEZONE:-America/Chicago}
     networks:
       - topshooter-net
+      - n8n_external
     # No ports exposed to host — bot is internal-only.
     # Other containers on `topshooter-net` reach it at http://topshooter:8000
+    # n8n (on `root_default` aliased here as `n8n_external`) reaches it the same way.
 
 networks:
+  n8n_external:
+    # The n8n stack runs in `root_default` (created by /root/docker-compose.yml).
+    # We mount it as `external: true` so n8n containers can reach topshooter:8000.
+    name: root_default
+    external: true
   topshooter-net:
     name: topshooter-net
     driver: bridge
