@@ -215,6 +215,10 @@ class Moderation(commands.Cog):
     @app_commands.describe(user="Member to untimeout.", reason="Reason for the audit log.")
     @app_commands.default_permissions(moderate_members=True)
     async def untimeout_cmd(self, interaction: discord.Interaction, user: discord.Member, reason: str = ""):
+        ok, why = checks.can_act_on(interaction.user, user, interaction.guild.me)
+        if not ok:
+            await interaction.response.send_message(embed=embeds.error(why), ephemeral=True)
+            return
         try:
             await user.timeout(None, reason=f"By {interaction.user}: {reason}")
         except discord.HTTPException as e:
