@@ -8,6 +8,13 @@ to the right handler. See ACTION_HANDLERS below for the full action vocabulary.
 
 Every handler returns `{"ok": bool, "result": ..., "error": str|null}`.
 
+Actor model: there is no per-user actor — possession of the BOT_API_TOKEN is
+the only authorization. Every moderation handler therefore acts *as the bot*,
+and hierarchy checks pass `guild.me` as the actor (e.g. h_timeout / h_untimeout
+gate on `checks.can_act_on(guild.me, member, guild.me)`; h_grant_role /
+h_revoke_role refuse any role at or above the bot's top role). Callers are
+trusted to have already authorized the human on their side (n8n / Discord perms).
+
 Designed to be called by n8n's "PKCW Discord Bot — Tool: bot" sub-workflow.
 """
 
@@ -303,6 +310,9 @@ async def h_timeout(bot, params):
 async def h_untimeout(bot, params):
     guild = _get_guild(bot, params)
     member = guild.get_member(int(params["user_id"])) or await guild.fetch_member(int(params["user_id"]))
+    ok_act, why = checks.can_act_on(guild.me, member, guild.me)
+    if not ok_act and member.id != guild.owner_id:
+        return fail(why)
     await member.timeout(None, reason=params.get("reason") or "via API")
     return ok({"untimed_out": True})
 

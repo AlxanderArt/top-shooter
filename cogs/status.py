@@ -9,7 +9,7 @@ landing in config.STATUS_AUTO_POST_CHANNEL_ID (falls back to #audit-log).
 
 import logging
 import time
-from datetime import datetime, time as dt_time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
@@ -160,6 +160,10 @@ class Status(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.started_at = time.time()
+        # Last local slot we auto-posted, as (date_iso, hour). Guards against
+        # double-posting within the same 00:00 / 12:00 window since the loop
+        # ticks every minute. None until the first post fires.
+        self._last_auto_slot: tuple[str, int] | None = None
         self.auto_post_loop.start()
 
     def cog_unload(self):
@@ -178,15 +182,16 @@ class Status(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=not public)
 
     # -- Scheduled auto-post (00:00 and 12:00 in STATUS_TIMEZONE) ----------
-    @tasks.loop(time=[
-        dt_time(hour=0, minute=0),
-        dt_time(hour=12, minute=0),
-    ])
+    # Tick every minute and gate on the *local* clock. `@tasks.loop(time=...)`
+    # is UTC-anchored, so the previous schedule fired at 00:00/12:00 UTC and
+    # then bailed because the local hour wasn't 0/12 — under America/Chicago the
+    # two never coincide, so the post effectively never happened. An interval
+    # loop with a local-time check + last-slot dedup posts exactly once per
+    # local 00:00 and 12:00 regardless of the server's UTC offset.
+    AUTO_POST_WINDOW_MIN = 5  # minutes past the hour we'll still fire within
+
+    @tasks.loop(minutes=1)
     async def auto_post_loop(self):
-        # discord.tasks.loop interprets `time` in UTC by default. Convert by
-        # rescheduling at the next correct local moment instead — simpler to
-        # check the local hour/minute ourselves and bail if it's not our window.
-        # The above schedule is UTC-anchored, so we adjust by re-checking.
         if not config.STATUS_AUTO_POST_CHANNEL_ID:
             return
         if not self.bot.is_ready() or not config.DEV_GUILD_ID:
@@ -194,13 +199,17 @@ class Status(commands.Cog):
         guild = self.bot.get_guild(config.DEV_GUILD_ID)
         if not guild:
             return
-        # Verify it's actually 00:00 or 12:00 in the configured TZ (within a 30-min slop).
+        # Only post inside the first few minutes of local 00:00 / 12:00, and
+        # only once per (date, hour) slot.
         try:
             tz = ZoneInfo(config.STATUS_TIMEZONE)
         except Exception:
             tz = ZoneInfo("UTC")
         now_local = datetime.now(tz)
-        if now_local.hour not in (0, 12):
+        if now_local.hour not in (0, 12) or now_local.minute >= self.AUTO_POST_WINDOW_MIN:
+            return
+        slot = (now_local.date().isoformat(), now_local.hour)
+        if slot == self._last_auto_slot:
             return
         ch = guild.get_channel(config.STATUS_AUTO_POST_CHANNEL_ID)
         if not isinstance(ch, discord.TextChannel):
@@ -211,6 +220,9 @@ class Status(commands.Cog):
         try:
             embed = await _build_status(self.bot, guild, self.started_at, is_auto=True)
             await ch.send(embed=embed)
+            # Record the slot only after a successful send so a transient
+            # failure can retry on the next minute-tick within the window.
+            self._last_auto_slot = slot
             log.info("auto-status posted to #%s (%s local)", ch.name, now_local.strftime("%H:%M %Z"))
         except (discord.Forbidden, discord.HTTPException) as e:
             log.warning("auto-status post failed: %s", e)
