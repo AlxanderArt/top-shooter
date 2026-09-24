@@ -13,6 +13,15 @@ on:
       - "docs/ORCHESTRATION_FOUNDATION.md"
       - "README.md"
       - ".github/workflows/rust-orchestration.yml"
+      - "Dockerfile"
+      - "api.py"
+      - "bot.py"
+      - "cogs/moderation.py"
+      - "cogs/status.py"
+      - "config.py"
+      - "db/schema.sql"
+      - "docker-compose.yml"
+      - "requirements.txt"
   push:
     branches: [main]
     paths:
@@ -26,6 +35,15 @@ on:
       - "docs/ORCHESTRATION_FOUNDATION.md"
       - "README.md"
       - ".github/workflows/rust-orchestration.yml"
+      - "Dockerfile"
+      - "api.py"
+      - "bot.py"
+      - "cogs/moderation.py"
+      - "cogs/status.py"
+      - "config.py"
+      - "db/schema.sql"
+      - "docker-compose.yml"
+      - "requirements.txt"
 
 permissions:
   contents: read

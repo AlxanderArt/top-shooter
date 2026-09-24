@@ -16,6 +16,36 @@ def run(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 
 
 class RepositoryGuardTests(unittest.TestCase):
+    def test_workflow_runs_when_any_protected_file_changes(self) -> None:
+        manifest = json.loads(
+            (REPO_ROOT / "orchestration" / "protected-files.json").read_text(encoding="utf-8")
+        )
+        protected = set(manifest["protected_files"])
+        lines = (REPO_ROOT / ".github" / "workflows" / "rust-orchestration.yml").read_text(
+            encoding="utf-8"
+        ).splitlines()
+
+        def event_paths(event: str) -> set[str]:
+            header = f"  {event}:"
+            start = lines.index(header) + 1
+            paths: set[str] = set()
+            in_paths = False
+            for line in lines[start:]:
+                if line.startswith("  ") and not line.startswith("    "):
+                    break
+                if line == "    paths:":
+                    in_paths = True
+                    continue
+                if in_paths and line.startswith("      - "):
+                    paths.add(json.loads(line.removeprefix("      - ")))
+                elif in_paths and line and not line.startswith("      "):
+                    break
+            return paths
+
+        for event in ("pull_request", "push"):
+            missing = protected - event_paths(event)
+            self.assertFalse(missing, f"{event}.paths misses protected files: {sorted(missing)}")
+
     def test_binds_manifest_to_external_baseline_and_rejects_self_authorization(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
