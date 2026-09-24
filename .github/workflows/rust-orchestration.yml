@@ -1,0 +1,115 @@
+name: Rust orchestration foundation
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "crates/**"
+      - "orchestration/**"
+      - "tools/verify_orchestration_foundation.py"
+      - "tests/test_repository_guard.py"
+      - "docs/ORCHESTRATION_FOUNDATION.md"
+      - "README.md"
+      - ".github/workflows/rust-orchestration.yml"
+      - "Dockerfile"
+      - "api.py"
+      - "bot.py"
+      - "cogs/moderation.py"
+      - "cogs/status.py"
+      - "config.py"
+      - "db/schema.sql"
+      - "docker-compose.yml"
+      - "requirements.txt"
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "crates/**"
+      - "orchestration/**"
+      - "tools/verify_orchestration_foundation.py"
+      - "tests/test_repository_guard.py"
+      - "docs/ORCHESTRATION_FOUNDATION.md"
+      - "README.md"
+      - ".github/workflows/rust-orchestration.yml"
+      - "Dockerfile"
+      - "api.py"
+      - "bot.py"
+      - "cogs/moderation.py"
+      - "cogs/status.py"
+      - "config.py"
+      - "db/schema.sql"
+      - "docker-compose.yml"
+      - "requirements.txt"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-orchestration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: top_shooter_test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d top_shooter_test_ci"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/top_shooter_test_ci?sslmode=disable
+      TOP_SHOOTER_OFFLINE_MODE: local_test
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - name: Toolchain identity
+        run: |
+          rustc --version
+          cargo --version
+          python3 --version
+          docker --version
+
+      - name: Verify legacy surfaces are frozen
+        env:
+          EXPECTED_BASELINE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          args=()
+          if [[ -n "$EXPECTED_BASELINE" ]]; then
+            args+=(--expected-baseline "$EXPECTED_BASELINE")
+          fi
+          python3 tools/verify_orchestration_foundation.py "${args[@]}"
+
+      - name: Test repository guard
+        run: python3 -m unittest tests/test_repository_guard.py
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Lint with warnings denied
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Run repeatable Rust tests with PostgreSQL
+        run: |
+          cargo test --workspace --locked -- --test-threads=1
+          cargo test --workspace --locked -- --test-threads=1
+          test "$(psql "$DATABASE_URL" -Atqc "SELECT count(*) FROM pg_database WHERE datname ~ '^_sqlx_test_';")" -eq 0
+
+      - name: Preserve Python syntax compatibility
+        run: python3 -m compileall -q .

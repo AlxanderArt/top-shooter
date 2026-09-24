@@ -1,0 +1,40 @@
+schema_version: 1
+policy_version: phase1-v1
+tools:
+  - id: discord.reply
+    risk: R1
+    max_autonomy: A2
+    static_content: TOP SHOOTER ONLINE.
+routes:
+  - id: suspicious_instruction
+    priority: 200
+    event_type: message.created
+    when:
+      actor_is_bot: false
+      mentions_top_shooter: true
+      security_signal: true
+    outcome: ignore
+    autonomy: A0
+  - id: mention_static_reply
+    priority: 100
+    event_type: message.created
+    when:
+      actor_is_bot: false
+      mentions_top_shooter: true
+      security_signal: false
+    outcome: execute_tool
+    tool: discord.reply
+    autonomy: A2
+  - id: bot_message
+    priority: 300
+    event_type: message.created
+    when:
+      actor_is_bot: true
+      mentions_top_shooter: true
+      security_signal: false
+    outcome: ignore
+    autonomy: A0
+default_route:
+  id: no_match
+  outcome: ignore
+  autonomy: A0

@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "baseline_commit": "ab63d74b844087b07a2eca8df1188f9cd71a9b68",
+  "protected_files": {
+    "Dockerfile": "55ef2cad19d1e2e99330d6b026f681031acd4d550c1238a5bffa598828561259",
+    "api.py": "0bedc6a3bfcd36590e14d9c8843bd0e8d0d934f7b8255c95beb39935aeda0861",
+    "bot.py": "e80e5110390c7d004b9f91e33f524a76efb1e2c98d417ad64b10064039f70674",
+    "cogs/moderation.py": "d42e5b5e054bf72ef82f40b3305ff1560e0cc5906d90268fec92a2db5e32a8f6",
+    "cogs/status.py": "ab5cd71898aafffb576c67409f05a2431d8b5cd048341970ee09628f5aa4ec24",
+    "config.py": "047260f4855a9d3649f72cfabd912dca48c952f02855218c9690d77e8085c662",
+    "db/schema.sql": "a98b60f56856557831cd8f83ba6fe74be8c7d8f4447a7028bd16e290336e3b75",
+    "docker-compose.yml": "8441f06f1d88b2cda65786d3743474061b22c8748dcc79e2cd858f5a29bbbafe",
+    "requirements.txt": "214e710dc251ec3ecb60e1c7ed010a0ebdd03eefebdc60591c575defbec41050"
+  }
+}
