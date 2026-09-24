@@ -45,6 +45,12 @@ Three things make it interesting:
                     Discord
 ```
 
+### Offline Rust orchestration foundation
+
+The repository also contains an additive Rust/YAML/PostgreSQL foundation for the next orchestration layer. Its current slice is deliberately offline: synthetic event fixtures are normalized, routed through strictly validated YAML, checked by a compiled permission guard, executed only by a simulated static reply tool, and written to an append-only PostgreSQL audit ledger.
+
+It does **not** connect to Discord, call the legacy `/action` endpoint, activate moderation, load a model, or deploy infrastructure. See [`docs/ORCHESTRATION_FOUNDATION.md`](docs/ORCHESTRATION_FOUNDATION.md) for the architecture, commands, acceptance evidence, and deferred security gates.
+
 ---
 
 ## The 10-phase build
@@ -84,7 +90,7 @@ The `/action` endpoint accepts `{action, params}` and routes to one of **19 hand
 - **Reads** — `get_member`, `list_members`, `list_channels`, `recent_messages`, `audit_log_recent`
 - **Moderation** — `grant_role`, `revoke_role`, `timeout`, `untimeout`, `warn`, `kick`, `ban`, `unban`
 
-Every action runs role-hierarchy guards before acting and returns `{ok, result, error}` consistently.
+Every action returns `{ok, result, error}` consistently. The legacy bearer-token dispatcher is preserved for compatibility, but it is **not** used by the new Rust orchestration foundation; consequential action integration remains blocked until capability, approval, current-state authorization, idempotency, and reconciliation contracts are complete.
 
 ---
 

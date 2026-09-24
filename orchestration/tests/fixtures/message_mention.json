@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "source_event_id": "500000000000000001",
+  "occurred_at": "2026-01-15T12:00:00Z",
+  "guild_id": "200000000000000001",
+  "channel_id": "300000000000000001",
+  "message_id": "500000000000000001",
+  "actor": {
+    "id": "400000000000000001",
+    "is_bot": false
+  },
+  "mentions_top_shooter": true,
+  "content": "@TopShooter status"
+}

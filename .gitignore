@@ -31,3 +31,6 @@ htmlcov/
 # Local-only scratch
 scratch/
 TODO.md
+
+# Rust build output
+/target/

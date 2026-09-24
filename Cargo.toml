@@ -1,0 +1,29 @@
+[workspace]
+members = [
+  "crates/top-shooter-contracts",
+  "crates/top-shooter-control",
+  "crates/top-shooter-store",
+  "crates/top-shooter-runtime",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "UNLICENSED"
+authors = ["AlxanderArt <167923249+AlxanderArt@users.noreply.github.com>"]
+
+[workspace.dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "migrate", "macros"] }
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
+uuid = { version = "1", features = ["serde", "v7"] }
+url = "2"
